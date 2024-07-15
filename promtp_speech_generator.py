@@ -1,5 +1,8 @@
+# Importing the rewquired libraries
 import requests
 import os
+
+import PyPDF2
 from datetime import datetime
 from openai import OpenAI
 
@@ -12,10 +15,7 @@ class CreateSpeech(object):
      
     """
     API_URL = 'https://api.openai.com/v1/audio/speech'
-    HEADERS = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer '+ os.environ['OPEN_AI_API_KEY']
-    }   
+      
 
     voices = ('alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer')
     formats = ('mp3', 'opus', 'aac', 'flac', 'wav', 'pcm')
@@ -62,12 +62,22 @@ class CreateSpeech(object):
         if not self.MODEL_VOICE or self.MODEL_VOICE =='':
             return False, 400, ''
 
+        try:
+            HEADERS = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+ os.environ['OPEN_AI_API_KEY']
+            } 
+        except KeyError as e:
+            print(str(e))
+            return False, 400, str(e)
         DATA = {
             "model": "tts-1",
             "input": self.INPUT_TEXT,
-            "voice": self.MODEL_VOICE
+            "voice": self.MODEL_VOICE,
+            "speed": self.SPEED,
+            "format": self.FORMAT
         }
-        response = requests.post(self.API_URL, headers=self.HEADERS, json=DATA)
+        response = requests.post(self.API_URL, headers=HEADERS, json=DATA)
 
         directory = "speechs/"
 
@@ -108,4 +118,21 @@ class CreateSpeech(object):
         #response.stream_to_file("output.mp3")
         response.with_streaming_response.method("output.mp3")
 
+    def extract_content_from_file_v1(file_path):
+        """ 
+        This metho is used to extract data from a PDF
+        """
+
+        if not file_path or '.pdf' not in file_path:
+            return  "Invalid format"
         
+        if not os.path.exists(file_path):
+            return "File not found"
+        
+        pdf_file = open(file_path, 'rb')
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+
+        number_of_pages = len(pdf_reader.pages)
+        
+        return number_of_pages
+    

@@ -11,10 +11,7 @@ class ConvertAudioSpeechToText(object):
      
     """
     API_URL = 'https://api.openai.com/v1/audio/speech'
-    HEADERS = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer '+ os.environ['OPEN_AI_API_KEY']
-    }   
+    
 
     voices = ('alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer')
     formats = ('mp3', 'opus', 'aac', 'flac', 'wav', 'pcm')
@@ -57,38 +54,46 @@ class ConvertAudioSpeechToText(object):
         if not self.MODEL_VOICE or self.MODEL_VOICE =='':
             return False, 400, ''
 
-        DATA = {
-            "model": "tts-1",
-            "input": self.INPUT_TEXT,
-            "voice": self.MODEL_VOICE
-        }
-        response = requests.post(self.API_URL, headers=self.HEADERS, json=DATA)
+        try:
+            HEADERS = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+ os.environ['OPEN_AI_API_KEY']
+            }   
+            DATA = {
+                "model": "tts-1",
+                "input": self.INPUT_TEXT,
+                "voice": self.MODEL_VOICE
+            }
 
-        directory = "speechs/"
+            response = requests.post(self.API_URL, headers=HEADERS, json=DATA)
 
-       
-        if response.status_code == 200:
-            filename = f'{self.FILE_NAME}{datetime.now().strftime("%d-%m-%Y %H-%M-%S")}.{self.FORMAT}'
-            # Use the os.path.join to create the full file path
-            file_path = os.path.join(directory, filename)
+            directory = "speechs/"
 
-            # Check if the file exists, if true then it create other name for it
-            if os.path.exists(file_path):
-                print("The file exists.")
+        
+            if response.status_code == 200:
+                filename = f'{self.FILE_NAME}{datetime.now().strftime("%d-%m-%Y %H-%M-%S")}.{self.FORMAT}'
+                # Use the os.path.join to create the full file path
+                file_path = os.path.join(directory, filename)
 
-            client = OpenAI(
-            api_key=os.environ['OPEN_AI_API_KEY'],  # this is also the default, it can be omitted
-            )
+                # Check if the file exists, if true then it create other name for it
+                if os.path.exists(file_path):
+                    print("The file exists.")
 
-            audio_file= open(self.FILE_NAME, "rb")
-            transcription = client.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_file,
-            response_format="text"
-            )
-            return True, 200, transcription.text
-        else:
-            return False, response.status_code, ''
+                client = OpenAI(
+                api_key=os.environ['OPEN_AI_API_KEY'],  # this is also the default, it can be omitted
+                )
+
+                audio_file= open(self.FILE_NAME, "rb")
+                transcription = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file,
+                response_format="text"
+                )
+                return True, 200, transcription.text
+            else:
+                return False, response.status_code, ''
+        except KeyError as e:
+            return False, 400, str(e)
         
     
     def generate_translation():
